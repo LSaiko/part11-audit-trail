@@ -38,15 +38,13 @@ def entry_hash(
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def record_hash(content: dict[str, Any] | bytes) -> str:
-    """sha256 of an electronic record's content.
+def canonical_json(content: dict[str, Any]) -> bytes:
+    """``json.dumps(sort_keys=True, separators=(",", ":"))`` so key order and whitespace
+    never change a hash or signature (ALCOA+ Consistent)."""
+    return json.dumps(content, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
-    ``dict`` content is canonicalised with ``json.dumps(sort_keys=True, separators=(",", ":"))``
-    so key order and whitespace never change the hash (ALCOA+ Consistent).
-    """
-    raw = (
-        content
-        if isinstance(content, bytes)
-        else json.dumps(content, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    )
+
+def record_hash(content: dict[str, Any] | bytes) -> str:
+    """sha256 of an electronic record's content (``dict`` content is canonicalised first)."""
+    raw = content if isinstance(content, bytes) else canonical_json(content)
     return hashlib.sha256(raw).hexdigest()

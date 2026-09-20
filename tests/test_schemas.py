@@ -3,7 +3,14 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from schemas import GENESIS_HASH, AuditEvent, AuditEventIn, ESignature, IntegrityCheckResult
+from schemas import (
+    GENESIS_HASH,
+    AuditEvent,
+    AuditEventIn,
+    ESignature,
+    IntegrityCheckResult,
+    SignatureVerification,
+)
 
 T = datetime(2026, 9, 20, 12, 0, tzinfo=UTC)
 H = "a" * 64
@@ -26,13 +33,22 @@ SIG = ESignature(
     timestamp=T,
     meaning="approved",
     signature_method="username_password_demo",
+    signature_value="c2ln",
+)
+VERIFICATION = SignatureVerification(
+    signature_id="sig-1",
+    record_hash_matches=True,
+    signature_valid=True,
+    captured_hash=H,
+    current_hash=H,
+    checked_at=T,
 )
 CHECK = IntegrityCheckResult(
     checked_at=T, chain_valid=False, first_broken_link=2, total_events_checked=5
 )
 
 
-@pytest.mark.parametrize("model", [EVENT, SIG, CHECK])
+@pytest.mark.parametrize("model", [EVENT, SIG, CHECK, VERIFICATION])
 def test_json_round_trip(model: BaseModel) -> None:
     assert type(model).model_validate_json(model.model_dump_json()) == model
 

@@ -71,6 +71,19 @@ class ESignature(_Frozen):
     timestamp: datetime
     meaning: SignatureMeaning
     signature_method: str = Field(min_length=1)
+    signature_value: str  # base64 Ed25519 signature over the canonical JSON of the other fields
+
+
+class SignatureVerification(_Frozen):
+    """Result of re-verifying a stored signature: ``signature_valid`` is the Ed25519 check,
+    ``record_hash_matches`` is whether the record is still the version that was signed."""
+
+    signature_id: str = Field(min_length=1)
+    record_hash_matches: bool
+    signature_valid: bool
+    captured_hash: str = Field(pattern=_SHA256_HEX)
+    current_hash: str = Field(pattern=_SHA256_HEX)
+    checked_at: datetime
 
 
 class IntegrityCheckResult(_Frozen):

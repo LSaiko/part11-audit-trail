@@ -7,6 +7,7 @@ from schemas.models import (
     ESignature,
     IntegrityCheckResult,
     SignatureMeaning,
+    SignatureVerification,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ESignature",
     "IntegrityCheckResult",
     "SignatureMeaning",
+    "SignatureVerification",
 ]
