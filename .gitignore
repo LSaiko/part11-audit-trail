@@ -1,0 +1,22 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+
+# node
+node_modules/
+dashboard/dist/
+npm-debug.log*
+dashboard/tsconfig.tsbuildinfo
+
+# outputs
+*.pdf
