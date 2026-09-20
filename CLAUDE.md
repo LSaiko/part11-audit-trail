@@ -6,18 +6,40 @@ You are the Documenter. You read the raw hash-chained event log and produce huma
 
 ## Project summary
 
-`part11-audit-trail` is a portfolio project demonstrating 21 CFR Part 11 compliant electronic
-records and electronic signatures: a tamper-evident, hash-chained, append-only audit log
-(11.10(e)) plus an e-signature workflow with explicit signature meaning (11.50) and
-signature/record linking (11.70), grounded in ALCOA+ (Attributable, Legible, Contemporaneous,
-Original, Accurate, Complete, Consistent, Enduring, Available). A FastAPI backend owns the
-only write path into the log (`app/log_service.py`, SQLite with UPDATE/DELETE-refusing
-triggers), each entry's `entry_hash` chains to the previous entry's hash (sha256), an
-integrity verifier walks the chain and reports the first broken link, and e-signatures are
-Ed25519-signed over the record hash captured at signing time so post-signature record
-changes are detectable. A React/TS dashboard renders the per-record audit trail, chain
-integrity and signature status, with a genuinely-verified seed stream and tamper simulation
-on Pages.
+`part11-audit-trail` is a portfolio project demonstrating 21 CFR Part 11 electronic records
+and electronic signatures as structural properties, grounded in ALCOA+ (every principle maps
+to one tested decision in the README). Built:
+
+- `app/log_service.py` `AuditLog`: the only write path. SQLite `audit_events` with
+  `BEFORE UPDATE` / `BEFORE DELETE` triggers that `RAISE(ABORT)`; server-set UTC timestamps;
+  `entry_hash = sha256(before_hash US actor US action US record_type US record_id US ts US
+  after_hash)` chained to the previous entry (`GENESIS_HASH = "0"*64`); a lock serialises
+  read-head + insert so concurrent appends chain correctly (11.10(e)).
+- `app/verifier.py` `verify_chain`: recomputes every hash, reports `first_broken_link` (the
+  Documenter reports, never repairs). Tail truncation is the documented blind spot
+  (`# ponytail:` upgrade path: signed head checkpoint).
+- `app/auth.py` (scrypt + `hmac.compare_digest`, demo single-factor), `app/records.py`
+  (in-memory records, every put logged with `record_hash`), `app/signatures.py`
+  (`POST /sign`: authenticate, capture record hash, Ed25519-sign the canonical JSON of an
+  `ESignature` with explicit `meaning`, log `esign:<meaning>`; failed auth logged as
+  `esign:auth_failed`; `verify` reports `signature_valid` and `record_hash_matches`
+  independently, 11.50 / 11.70).
+- `app/main.py`: `POST /events` internal ingest guarded by `X-Audit-Token`
+  (`AUDIT_INTERNAL_TOKEN`), `AuditEventIn extra="forbid"` rejects client `timestamp` / hashes
+  with 422; `GET /audit-trail/{id}` returns one record's events plus full-chain integrity.
+- `crypto/` (`hashing.py`, `signing.py`): stdlib sha256 + `cryptography` Ed25519, isolated.
+- `dashboard/`: React/TS viewer; `src/verify.ts` mirrors the Python hashing;
+  `scripts/check-seed.mjs` (Node >= 22.18) proves digest parity against
+  `tests/seed_parity.json` at build time; seed mode on Pages with `?tamper=1` simulation.
+- `tests/`: 94 tests, 100% line + branch coverage gated in CI (`--cov-fail-under=100`);
+  tamper tests cover mutation of every field at first/middle/last, re-order, mid-chain
+  delete/insert, raw-SQL bypass, concurrent appends, signature replay / re-attribution /
+  transplant, cross-key verification.
+
+Known limitations (README): tail truncation, single server signing key, demo auth,
+in-memory records and signatures. Related projects: `sop-review-tool` and `capa-tracker`
+(`ClosureRecord.closed_by` hook) consume the signature workflow; `traceability-matrix-dhf`
+consumes audit records as DHF evidence; `ml-samd-validator` is the sibling Inspector.
 
 ## Non-negotiable constraints
 

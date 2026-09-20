@@ -41,6 +41,8 @@ the broken state is detected, not painted on._
 - [Quick start](#quick-start)
 - [API](#api)
 - [Layout and dev commands](#layout-and-dev-commands)
+- [Related projects](#related-projects)
+- [Interview Q&A](#interview-qa)
 - [License](#license)
 
 ## Core use case
@@ -240,6 +242,62 @@ Environment (all via `os.getenv`, none hardcoded): `AUDIT_DB_PATH` (default in-m
 - `/docs` `architecture.md`, screenshots
 - `ruff check .` / `mypy app schemas crypto` / `pytest` / `cd dashboard && npm run build`
 - Pages build: `VITE_BASE=/part11-audit-trail/ npm run build` (`MSYS_NO_PATHCONV=1` on Git Bash)
+
+## Related projects
+
+- [sop-review-tool](https://github.com/LSaiko/sop-review-tool): 21 CFR 820 SOP compliance
+  reviewer. Consumer of this signature workflow: a reviewed SOP is the electronic record an
+  approver signs with `meaning: approved`, and the review's own audit entries would
+  `POST /events` into this chain.
+- [capa-tracker](https://github.com/LSaiko/capa-tracker)
+  ([live demo](https://lsaiko.github.io/capa-tracker/)): the Explainer. Its
+  `ClosureRecord.closed_by` is the documented Part 11 hook point; the signature would be
+  captured over the `ClosureEvidence` hash exactly as `POST /sign` captures a record hash
+  here, and each CAPA state transition would `POST /events`.
+- [traceability-matrix-dhf](https://github.com/LSaiko/traceability-matrix-dhf)
+  ([live demo](https://lsaiko.github.io/traceability-matrix-dhf/)): the Archivist. Consumer of
+  audit records as design-history-file evidence: a verified chain segment for a requirement's
+  record is the evidence that its history is complete.
+- [ml-samd-validator](https://github.com/LSaiko/ml-samd-validator)
+  ([live demo](https://lsaiko.github.io/ml-samd-validator/)): the Inspector, sibling role to
+  this repo's Documenter; its locked `ModelBaseline` and validation evidence are the kind of
+  records whose approval this trail would carry.
+
+## Interview Q&A
+
+**Why hash chaining rather than a simple append-only log table?** An append-only table
+protects the *live* file against the application and against anyone who respects the
+triggers. It does nothing for a copy of the file, a restored backup, or a DBA who drops the
+trigger first. The chain is a property of the *data*, not of the container: any copy, on any
+machine, can be verified from genesis by anyone with the verifier, and the first altered,
+removed or re-ordered entry is named by position. The two together mean the live file resists
+rewriting and every other copy exposes it.
+
+**Demo-grade auth versus production MFA: what is the trade-off?** 11.200(a)(1) requires at
+least two distinct identification components for a non-biometric signature; this repo has one
+(username + password, scrypt-hashed, constant-time compared). Adding a second factor here would
+mean either a fake one-time code that proves nothing or a real identity provider that makes
+the demo undeployable on Pages. The `# ponytail:` comment in `app/auth.py` names the ceiling
+and the upgrade (OIDC with MFA, 11.300 lockout and ageing); the signature service already
+takes a `users` mapping so the identity source is swappable without touching the signing path.
+
+**What does hash chaining not protect against, and what fixes it?** Two things. Tail
+truncation: dropping the newest entries leaves a shorter chain that still verifies, because
+nothing after the new head vouches for what was removed. The fix is a periodically signed
+checkpoint of the head hash and row count stored out-of-band, so "the chain is shorter than
+the last checkpoint" becomes a finding. Server-key trust: one Ed25519 key signs for every user,
+so a compromised server can mint signatures. The fix is per-signer keys held in an HSM/KMS,
+with the server key countersigning. Both are tested as documented limitations rather than
+hidden.
+
+**How does a signature stay verifiable after the record changes, and why is that desired?**
+The signature covers the record's *fingerprint at signing time*, not the record's current
+state. After an edit, `verify` reports two independent facts: `signature_valid: true` (alice
+really did sign this fingerprint with this meaning) and `record_hash_matches: false` (the
+record is no longer that version). That split is what 11.70 wants: you can still prove what
+was approved and by whom, while making it impossible to present the edited version as the
+approved one. If the edit invalidated the signature instead, the evidence of the original
+approval would be lost at exactly the moment it matters.
 
 ## License
 
