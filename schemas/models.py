@@ -10,7 +10,7 @@ is linked to its record by hash (11.70).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -94,3 +94,48 @@ class IntegrityCheckResult(_Frozen):
     chain_valid: bool
     first_broken_link: int | None = Field(default=None, ge=0)
     total_events_checked: int = Field(ge=0)
+
+
+# --- API boundary shapes -------------------------------------------------------------------
+
+
+class RecordIn(_Strict):
+    """Body of ``PUT /records/{record_type}/{record_id}``: who is writing and the new content.
+    The server hashes ``content`` and logs the write, so the trail stays Attributable."""
+
+    actor: str = Field(min_length=1)
+    content: dict[str, Any]
+
+
+class RecordState(_Frozen):
+    """Current fingerprint of an electronic record plus the audit event the write produced."""
+
+    record_type: str = Field(min_length=1)
+    record_id: str = Field(min_length=1)
+    current_hash: str = Field(pattern=_SHA256_HEX)
+    event: AuditEvent
+
+
+class SignRequest(_Strict):
+    """Body of ``POST /sign``: both identification components (11.200(a)(1)(i)) plus the record
+    and the explicit signature meaning (11.50). ``password`` is ``repr=False`` so it never
+    reaches a log line or error message."""
+
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1, repr=False)
+    record_id: str = Field(min_length=1)
+    meaning: SignatureMeaning
+
+
+class AuditTrail(_Frozen):
+    """One record's chronological events plus the integrity result of the *whole* chain.
+
+    The per-record trail is only trustworthy when every link in the full log verifies: a
+    break anywhere means entries could have been altered, re-ordered or removed, including
+    ones that touched this record. ``integrity.first_broken_link`` therefore indexes the full
+    chain, not ``events``.
+    """
+
+    record_id: str = Field(min_length=1)
+    events: list[AuditEvent]
+    integrity: IntegrityCheckResult

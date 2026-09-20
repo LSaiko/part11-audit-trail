@@ -1,0 +1,45 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #0f172a; color: #e2e8f0; font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+h1 { margin: 0 0 4px; font-size: 26px; color: #22d3ee; }
+h2 { font-size: 18px; margin: 24px 0 8px; }
+p { margin: 4px 0; }
+.muted { color: #94a3b8; }
+.small { font-size: 12px; }
+.mono, code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+code { color: #22d3ee; }
+.hash { color: #e2e8f0; cursor: help; border-bottom: 1px dotted #94a3b8; }
+.ok { color: #22d3ee; }
+.review { color: #f97316; font-size: 12px; }
+.badge { border: 1px solid #f97316; color: #f97316; border-radius: 999px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
+.topbar { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle input { accent-color: #f97316; width: 16px; height: 16px; }
+
+/* banner: status is carried by the text (CHAIN INTACT / CHAIN BROKEN), colour only reinforces it */
+.banner { margin-top: 20px; border-radius: 8px; padding: 12px 16px; border: 1px solid; }
+.banner.ok { border-color: #22d3ee; background: rgba(34, 211, 238, 0.08); }
+.banner.ok strong { color: #22d3ee; }
+.banner.broken { border-color: #f97316; background: rgba(249, 115, 22, 0.1); }
+.banner.broken strong { color: #f97316; }
+
+.layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; margin-top: 8px; }
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+nav h2 { margin-top: 24px; }
+.record { display: flex; flex-direction: column; width: 100%; text-align: left; background: #1e293b; color: inherit; border: 1px solid rgba(148, 163, 184, 0.25); border-left: 3px solid #94a3b8; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; font: inherit; }
+.record:hover, .record.active { border-color: #22d3ee; }
+.record.active { border-left-color: #22d3ee; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); vertical-align: top; white-space: nowrap; }
+th { color: #94a3b8; font-weight: 500; }
+tr.row-broken td { background: rgba(249, 115, 22, 0.15); }
+tr.row-broken td:first-child { border-left: 3px solid #f97316; }
+tr.row-after td { color: #94a3b8; }
+.pill { display: inline-block; color: #0f172a; font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: #22d3ee; }
+.pill.broken { background: #f97316; }
+
+footer { margin-top: 40px; border-top: 1px solid rgba(148, 163, 184, 0.2); padding-top: 12px; }

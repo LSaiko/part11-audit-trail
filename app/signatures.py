@@ -70,6 +70,10 @@ class SignatureService:
     def get(self, signature_id: str) -> ESignature:
         return self._signatures[signature_id]
 
+    def all(self) -> list[ESignature]:
+        """Every captured signature in signing order."""
+        return list(self._signatures.values())
+
     def verify(self, signature_id: str) -> SignatureVerification:
         signature = self._signatures[signature_id]
         current = self._records.current_hash(signature.signed_record_id)

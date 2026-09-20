@@ -15,8 +15,9 @@ only write path into the log (`app/log_service.py`, SQLite with UPDATE/DELETE-re
 triggers), each entry's `entry_hash` chains to the previous entry's hash (sha256), an
 integrity verifier walks the chain and reports the first broken link, and e-signatures are
 Ed25519-signed over the record hash captured at signing time so post-signature record
-changes are detectable. A React/TS dashboard (planned) renders the audit narrative and
-integrity report.
+changes are detectable. A React/TS dashboard renders the per-record audit trail, chain
+integrity and signature status, with a genuinely-verified seed stream and tamper simulation
+on Pages.
 
 ## Non-negotiable constraints
 
@@ -47,4 +48,5 @@ integrity report.
 
 - `python -m venv .venv` then `.venv/Scripts/pip install -e .[dev]`
 - `.venv/Scripts/python -m pytest`; `ruff check .`; `mypy app schemas crypto`
-- `uvicorn app.main:app --reload`
+- `uvicorn app.main:app --reload --port 8011`
+- `cd dashboard && npm install && npm run build` (runs `scripts/check-seed.mjs` hash-parity proof)

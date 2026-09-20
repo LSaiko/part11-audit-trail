@@ -1,0 +1,106 @@
+{
+  "entry_hash": [
+    {
+      "args": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "alice",
+        "create",
+        "SOP-017",
+        "2026-09-14T08:02:11+00:00",
+        "sop",
+        "abababababababababababababababababababababababababababababababab"
+      ],
+      "expected": "5280fbdcd61ff97e1ad3bd034b1ff48b3227638e556361e65bad9c32214db6fc"
+    },
+    {
+      "args": [
+        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "bob",
+        "esign:approved",
+        "CAPA-0042",
+        "2026-09-18T09:26:50+00:00",
+        "capa",
+        ""
+      ],
+      "expected": "c7a7d9406da9b093f2b399b16e47556d37be1a8114291e2356d21a790f48d95e"
+    },
+    {
+      "args": [
+        "1234123412341234123412341234123412341234123412341234123412341234",
+        "carol",
+        "update",
+        "DHF-REQ-3",
+        "2026-09-16T07:58:23.123456+00:00",
+        "",
+        ""
+      ],
+      "expected": "154202b507433d0733b8c67192eedd82c1822ab962d7923fa979ab35d29803b4"
+    },
+    {
+      "args": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "aéb",
+        "b|c",
+        "r\u001fx",
+        "t",
+        "type",
+        ""
+      ],
+      "expected": "9a75bf2488b0af62c5bc71f1c831962031971850a07b3cb410179cee91c55ee8"
+    }
+  ],
+  "record_hash": [
+    {
+      "content": {
+        "title": "Equipment cleaning procedure",
+        "revision": 3,
+        "status": "draft",
+        "steps": [
+          "rinse",
+          "detergent",
+          "final rinse",
+          "dry"
+        ]
+      },
+      "expected": "a09826b47f4e7495e3a4d3d1ebbb87cecd39744aaa5ec0722b841c63aa8352b2"
+    },
+    {
+      "content": {
+        "z": true,
+        "a": null,
+        "m": [
+          1,
+          {
+            "y": "x",
+            "b": [
+              2,
+              3
+            ]
+          }
+        ],
+        "empty": {},
+        "list": []
+      },
+      "expected": "b4f0275d8ac6332e242ffc44dc29166a73d0c1d41de043438dba172dc40973d2"
+    },
+    {
+      "content": {
+        "unicode": "café – 日本 😀 ",
+        "quote": "he said \"hi\"\n\ttab\\",
+        "ctrl": "\u0001"
+      },
+      "expected": "8376ec0b6e3541d7537f651786918cd50a80d5c26788a2302bf9ffdccc336717"
+    },
+    {
+      "content": {
+        "ints": [
+          0,
+          -1,
+          12345678901234
+        ],
+        "b": false
+      },
+      "expected": "5bed2dca1613ea1dc22a14b693ff4cc50584a06b9cb23e67a475ba589bec52d8"
+    }
+  ]
+}

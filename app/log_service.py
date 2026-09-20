@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,7 +63,10 @@ class AuditLog:
     def __init__(self, path: Path | str | None = None) -> None:
         raw = str(path) if path is not None else os.getenv("AUDIT_DB_PATH", ":memory:")
         target = raw if raw == ":memory:" else Path(raw)
-        self._conn = sqlite3.connect(target, isolation_level=None)  # autocommit
+        # FastAPI runs sync endpoints in a threadpool; the lock serialises the read-previous-
+        # hash + insert pair so two concurrent appends cannot both chain to the same head.
+        self._conn = sqlite3.connect(target, isolation_level=None, check_same_thread=False)
+        self._lock = threading.Lock()
         self._conn.executescript(_DDL)
 
     @property
@@ -80,6 +84,17 @@ class AuditLog:
     ) -> AuditEvent:
         """Append one entry. Timestamp is server-generated UTC (Contemporaneous);
         ``before_hash`` is the previous entry's ``entry_hash`` (``GENESIS_HASH`` first)."""
+        with self._lock:
+            return self._append(actor, action, record_type, record_id, after_hash)
+
+    def _append(
+        self,
+        actor: str,
+        action: str,
+        record_type: str,
+        record_id: str,
+        after_hash: str | None,
+    ) -> AuditEvent:
         last = self._conn.execute(
             "SELECT entry_hash FROM audit_events ORDER BY rowid DESC LIMIT 1"
         ).fetchone()

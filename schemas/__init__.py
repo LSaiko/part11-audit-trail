@@ -4,18 +4,26 @@ from schemas.models import (
     GENESIS_HASH,
     AuditEvent,
     AuditEventIn,
+    AuditTrail,
     ESignature,
     IntegrityCheckResult,
+    RecordIn,
+    RecordState,
     SignatureMeaning,
     SignatureVerification,
+    SignRequest,
 )
 
 __all__ = [
     "GENESIS_HASH",
     "AuditEvent",
     "AuditEventIn",
+    "AuditTrail",
     "ESignature",
     "IntegrityCheckResult",
+    "RecordIn",
+    "RecordState",
     "SignatureMeaning",
     "SignatureVerification",
+    "SignRequest",
 ]

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "check": "node scripts/check-seed.mjs",
+    "build": "tsc -b && node scripts/check-seed.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
