@@ -187,3 +187,81 @@ def test_tail_truncation_is_not_detectable_by_hash_alone(events: list[AuditEvent
 def test_empty_chain_is_valid() -> None:
     result = verify_chain([])
     assert result.chain_valid and result.total_events_checked == 0
+
+
+def test_concurrent_appends_chain_correctly(log: AuditLog) -> None:
+    """FastAPI runs sync endpoints in a threadpool; the lock must serialise read-head + insert
+    so no two entries chain to the same predecessor (ALCOA+ Complete, Consistent)."""
+    import threading
+
+    def worker(i: int) -> None:
+        for j in range(20):
+            log.append(f"user{i}", "update", "t", f"R-{j}")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    events = log.events()
+    assert len(events) == 160
+    assert len({e.before_hash for e in events}) == 160  # every predecessor used exactly once
+    assert verify_chain(events).chain_valid
+
+
+def test_swapping_after_hash_between_entries_breaks_chain(log: AuditLog) -> None:
+    """Moving a content fingerprint from one entry to another (both stay well-formed sha256
+    values, so schema validation passes) still breaks the chain at the first entry touched:
+    entry_hash covers after_hash, so the swap is not a silent re-labelling."""
+    for i in range(4):
+        log.append("alice", "update", "t", "R", after_hash=str(i) * 64)
+    events = log.events()
+    swapped = _mutated(
+        _mutated(events, 1, after_hash=events[2].after_hash or ""),
+        2,
+        after_hash=events[1].after_hash or "",
+    )
+    result = verify_chain(swapped)
+    assert not result.chain_valid and result.first_broken_link == 1
+
+
+def test_raw_sql_insert_bypassing_the_service_is_detected(
+    events: list[AuditEvent], log: AuditLog
+) -> None:
+    """The triggers stop rewrites, not inserts: an attacker with the file can still INSERT a
+    row that skips the service. The chain then breaks at that row because its hashes were
+    never computed (or, if copied from a real row, its before_hash does not match the head)."""
+    conn = sqlite3.connect(log.path)
+    forged = events[3].model_dump()
+    forged["timestamp"] = events[3].timestamp.isoformat()
+    forged["id"] = "forged"
+    cols = ", ".join(forged)
+    conn.execute(
+        f"INSERT INTO audit_events ({cols}) VALUES ({', '.join('?' * len(forged))})",
+        tuple(forged.values()),
+    )
+    conn.commit()
+    conn.close()
+    result = verify_chain(log.events())
+    assert not result.chain_valid and result.first_broken_link == N
+    assert result.total_events_checked == N + 1
+
+
+def test_verifier_reports_only_the_first_break(events: list[AuditEvent]) -> None:
+    doubly = _mutated(_mutated(events, 2, actor="mallory"), 5, actor="trent")
+    assert verify_chain(doubly).first_broken_link == 2
+
+
+def test_persisted_file_can_be_verified_read_only(tmp_path: Path) -> None:
+    """The Documenter role: open the file, verify, never write. A second, read-only handle on
+    the same SQLite file must see exactly the chain the service wrote."""
+    db = tmp_path / "audit.db"
+    log = AuditLog(db)
+    for i in range(3):
+        log.append("alice", "update", "t", f"R-{i}")
+    rows = (
+        sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        .execute("SELECT entry_hash FROM audit_events ORDER BY rowid")
+        .fetchall()
+    )
+    assert [r[0] for r in rows] == [e.entry_hash for e in log.events()]

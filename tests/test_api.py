@@ -201,3 +201,34 @@ def test_verify_chain_reports_break_in_corrupted_db_copy(
     trail = client.get("/audit-trail/SOP-2").json()
     assert trail["events"][0]["actor"] == "mallory" and not trail["integrity"]["chain_valid"]
     assert AuditLog(live).events()[2].actor == "alice"  # the live file was never touched
+
+
+# --- API boundary: server-owned fields -----------------------------------------------------
+
+
+def test_post_event_rejects_every_server_owned_field(client: TestClient) -> None:
+    """ALCOA+ Contemporaneous / Original: id, timestamp, before_hash and entry_hash are
+    server-generated; a client that supplies any of them gets 422 and nothing is logged."""
+    body = {"actor": "a", "action": "b", "record_type": "c", "record_id": "d"}
+    for field, value in {
+        "timestamp": "2000-01-01T00:00:00Z",
+        "id": "chosen-by-client",
+        "before_hash": "0" * 64,
+        "entry_hash": "e" * 64,
+    }.items():
+        r = client.post("/events", json=body | {field: value})
+        assert r.status_code == 422, field
+        assert r.json()["detail"][0]["type"] == "extra_forbidden", field
+    assert client.post("/events", json=body | {"after_hash": "short"}).status_code == 422
+    assert client.get("/events").json() == []
+
+
+def test_concurrent_http_appends_chain_correctly(client: TestClient) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    body = {"actor": "lims", "action": "export", "record_type": "batch", "record_id": "B"}
+    with ThreadPoolExecutor(8) as pool:
+        codes = list(pool.map(lambda _: client.post("/events", json=body).status_code, range(40)))
+    assert codes == [200] * 40
+    result = client.get("/verify-chain").json()
+    assert result["chain_valid"] and result["total_events_checked"] == 40

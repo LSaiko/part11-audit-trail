@@ -174,3 +174,61 @@ def test_record_store_logs_create_then_update(records: RecordStore, log: AuditLo
     assert event.action == "update" and records.get("BR-1") == {"lot": "L-43"}
     assert records.record_type("BR-1") == "batch_record"
     assert event.after_hash == records.current_hash("BR-1") != first.after_hash
+
+
+# --- replay / substitution ---------------------------------------------------------------
+
+
+def test_signature_cannot_be_replayed_against_another_record(
+    service: SignatureService, records: RecordStore
+) -> None:
+    """11.70: a signature captured over BR-1 must not verify if someone re-points it at BR-2,
+    even when BR-2 has byte-identical content (same record hash). The record id is inside the
+    signed payload, so the Ed25519 check fails."""
+    records.put("alice", "batch_record", "BR-2", CONTENT)  # identical content -> same hash
+    sig = service.sign("alice", "alice-pw", "BR-1", "approved")
+    assert records.current_hash("BR-1") == records.current_hash("BR-2")
+    replayed = sig.model_copy(update={"signed_record_id": "BR-2"})
+    service._signatures[sig.id] = replayed
+    result = service.verify(sig.id)
+    assert result.record_hash_matches  # hashes agree by construction ...
+    assert not result.signature_valid  # ... but the signature does not cover this record id
+
+
+def test_signature_cannot_be_reattributed_to_another_signer(service: SignatureService) -> None:
+    sig = service.sign("alice", "alice-pw", "BR-1", "approved")
+    service._signatures[sig.id] = sig.model_copy(update={"signer": "bob"})
+    assert not service.verify(sig.id).signature_valid
+
+
+def test_signature_value_cannot_be_transplanted_between_signatures(
+    service: SignatureService,
+) -> None:
+    first = service.sign("alice", "alice-pw", "BR-1", "reviewed")
+    second = service.sign("bob", "bob-pw", "BR-1", "approved")
+    service._signatures[second.id] = second.model_copy(
+        update={"signature_value": first.signature_value}
+    )
+    assert service.verify(first.id).signature_valid
+    assert not service.verify(second.id).signature_valid
+
+
+def test_signature_does_not_verify_under_a_different_key() -> None:
+    other = signing.load_private_key(base64.b64encode(b"\x09" * 32).decode())
+    sig = signing.sign(b"payload")
+    assert not signing.verify(b"payload", sig, other.public_key().public_bytes_raw())
+
+
+def test_two_signatures_on_same_record_are_independent_and_both_logged(
+    service: SignatureService, log: AuditLog
+) -> None:
+    a = service.sign("alice", "alice-pw", "BR-1", "reviewed")
+    b = service.sign("bob", "bob-pw", "BR-1", "approved")
+    assert a.id != b.id and a.signature_value != b.signature_value
+    assert service.all() == [a, b]
+    assert [e.action for e in log.events_for("BR-1")] == [
+        "create",
+        "esign:reviewed",
+        "esign:approved",
+    ]
+    assert verify_chain(log.events()).chain_valid

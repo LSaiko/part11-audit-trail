@@ -4,6 +4,12 @@
 // Runs on Node >= 22.18 (native type stripping): `node scripts/check-seed.mjs`.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+
+const [major, minor] = process.versions.node.split(".").map(Number);
+if (major < 22 || (major === 22 && minor < 18)) {
+  console.error(`check-seed.mjs needs Node >= 22.18 (native TypeScript type stripping); found ${process.versions.node}. Upgrade Node or run the build on a newer runtime.`);
+  process.exit(1);
+}
 import { buildSeed, signaturePayload, tamper, verifySeedSignature } from "../src/seed.ts";
 import { entryHash, recordHash, verifyChain } from "../src/verify.ts";
 
