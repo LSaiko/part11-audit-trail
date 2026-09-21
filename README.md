@@ -4,6 +4,10 @@
 [![Pages](https://github.com/LSaiko/part11-audit-trail/actions/workflows/pages.yml/badge.svg)](https://github.com/LSaiko/part11-audit-trail/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Live demo](https://img.shields.io/badge/demo-GitHub%20Pages-22d3ee)](https://lsaiko.github.io/part11-audit-trail/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Coverage 100%](https://img.shields.io/badge/coverage-100%25%20line%2Bbranch-22d3ee)](.github/workflows/ci.yml)
+[![21 CFR Part 11](https://img.shields.io/badge/21%20CFR-Part%2011-f97316)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-11)
+[![ALCOA+](https://img.shields.io/badge/data%20integrity-ALCOA%2B-94a3b8)](#alcoa-to-design-decisions)
 
 **A 21 CFR Part 11 audit trail that can prove it has not been edited, plus an electronic
 signature that can prove which version of a record it was applied to.**
