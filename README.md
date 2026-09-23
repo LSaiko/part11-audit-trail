@@ -251,8 +251,9 @@ Environment (all via `os.getenv`, none hardcoded): `AUDIT_DB_PATH` (default in-m
 
 - [sop-review-tool](https://github.com/LSaiko/sop-review-tool): 21 CFR 820 SOP compliance
   reviewer. Consumer of this signature workflow: a reviewed SOP is the electronic record an
-  approver signs with `meaning: approved`, and the review's own audit entries would
-  `POST /events` into this chain.
+  approver signs with `meaning: approved`, and the review's own audit entries do
+  `POST /events` into this chain when `PART11_AUDIT_URL` is set
+  ([Part 11 integration](https://github.com/LSaiko/sop-review-tool#part-11-integration)).
 - [capa-tracker](https://github.com/LSaiko/capa-tracker)
   ([live demo](https://lsaiko.github.io/capa-tracker/)): the Explainer. Its
   `ClosureRecord.closed_by` is the documented Part 11 hook point; the signature would be
